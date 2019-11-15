@@ -115,6 +115,8 @@ bool              m_has_audio           = false;
 bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
+int               num_loops             = 0;
+int               max_loops             = 0;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -570,6 +572,7 @@ int main(int argc, char *argv[])
   const int http_user_agent_opt = 0x301;
   const int lavfdopts_opt   = 0x400;
   const int avdict_opt      = 0x401;
+  const int loop_num_opt    = 0x402;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -624,6 +627,7 @@ int main(int argc, char *argv[])
     { "live",         no_argument,        NULL,          live_opt },
     { "layout",       required_argument,  NULL,          layout_opt },
     { "dbus_name",    required_argument,  NULL,          dbus_name_opt },
+    { "loop_num",     required_argument,  NULL,          loop_num_opt },
     { "loop",         no_argument,        NULL,          loop_opt },
     { "layer",        required_argument,  NULL,          layer_opt },
     { "alpha",        required_argument,  NULL,          alpha_opt },
@@ -873,6 +877,9 @@ int main(int argc, char *argv[])
       }
       case dbus_name_opt:
         m_dbus_name = optarg;
+        break;
+      case loop_num_opt:
+        max_loops =  atoi(optarg);
         break;
       case loop_opt:
         if(m_incr != 0)
@@ -1448,6 +1455,9 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_SET_LAYER:
           m_player_video.SetLayer(result.getArg());
           break;
+      case KeyConfig::ACTION_SET_LOOP:
+          m_loop=result.getArg();
+        break;
       case KeyConfig::ACTION_PLAY:
         m_Pause=false;
         if(m_has_subtitle)
@@ -1780,9 +1790,19 @@ int main(int argc, char *argv[])
       }
 
       if (m_loop)
-      {
-        m_incr = m_loop_from - (m_av_clock->OMXMediaTime() ? m_av_clock->OMXMediaTime() / DVD_TIME_BASE : last_seek_pos);
-        continue;
+      {   
+        num_loops++;
+        if(max_loops > 0 && num_loops == max_loops) {
+            printf("done");
+        } else {
+          m_incr = m_loop_from - (m_av_clock->OMXMediaTime() ? m_av_clock->OMXMediaTime() / DVD_TIME_BASE : last_seek_pos);
+       
+          char buf[sizeof(int)*3+2];
+          snprintf(buf, sizeof buf, "%d", m_incr);
+          printf(buf);
+          printf("loop");
+          continue;
+        }
       }
 
       break;
